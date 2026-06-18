@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard CRM Depto. Compras LNB 2026</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS para diseño de Alta Gerencia -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PapaParse para lectura en tiempo real sin problemas de CORS en GitHub Pages -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- FontAwesome -->
+    <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
@@ -133,7 +131,7 @@
                         <tr>
                             <td colspan="8" class="text-center py-8 text-slate-400">
                                 <i class="fa-solid fa-spinner animate-spin text-xl mb-2 block text-blue-500"></i>
-                                Conectando en vivo con Google Sheets...
+                                Sincronizando datos en vivo con la Lotería Nacional de Beneficencia...
                             </td>
                         </tr>
                     </tbody>
@@ -143,55 +141,73 @@
     </main>
 
     <script>
-        // URL de tu Google Sheet en formato CSV público
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCqNVtnwMoZagf6vGc_IuHPiffDu4YKlPuy8C0j6CgEALSLk9JpBxZSDNseIKU2g/pub?gid=92599788&single=true&output=csv';
+        // Enlace directo de exportación nativo para saltar el bloqueo de GitHub Pages (CORS)
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/1vRCqNVtnwMoZagf6vGc_IuHPiffDu4YKlPuy8C0j6CgEALSLk9JpBxZSDNseIKU2g/gviz/tq?tqx=out:csv&gid=92599788';
         let rawData = [];
 
         document.addEventListener("DOMContentLoaded", function() {
             fetchData();
-            setInterval(fetchData, 60000); // Auto-actualizar cada minuto
+            setInterval(fetchData, 60000); // Sincroniza de fondo automáticamente cada 60 segundos
         });
 
-        function fetchData() {
+        async function fetchData() {
             const statusEl = document.getElementById('connection-status');
             statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span> Sincronizando...';
             statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-500 flex items-center gap-2";
 
-            Papa.parse(csvUrl, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    rawData = results.data;
-                    
-                    // Normalizar las propiedades del objeto para evitar problemas con tildes o caracteres especiales
-                    rawData = rawData.map(row => {
-                        let normalizedRow = {};
-                        Object.keys(row).forEach(key => {
-                            let normalizedKey = key.toLowerCase().trim()
-                                .replace(/[áàäâ]/g, 'a')
-                                .replace(/[éèëê]/g, 'e')
-                                .replace(/[íìïî]/g, 'i')
-                                .replace(/[óòöô]/g, 'o')
-                                .replace(/[úùüû]/g, 'u')
-                                .replace(/[^a-z0-9]/g, '_'); // reemplaza espacios/puntos por guiones bajos
-                            normalizedRow[normalizedKey] = row[key];
-                        });
-                        return normalizedRow;
-                    });
-
+            try {
+                const response = await fetch(csvUrl);
+                const text = await response.text();
+                
+                // Parseador de CSV interno ultra veloz para omitir dependencias caídas
+                rawData = parseCSV(text);
+                
+                if(rawData.length > 0) {
                     populateFilters(rawData);
                     renderDashboard(rawData);
-
                     statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span> Sincronizado LNB';
                     statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-2";
-                },
-                error: function(err) {
-                    console.error(err);
-                    statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-rose-500"></span> Error de Enlace';
-                    statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-rose-500/20 text-rose-500 flex items-center gap-2";
+                } else {
+                    throw new Error("Estructura vacía");
                 }
-            });
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-rose-500"></span> Error de Enlace';
+                statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-rose-500/20 text-rose-500 flex items-center gap-2";
+                document.getElementById('table-body').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-8 text-rose-600 bg-rose-50/50">
+                            <i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i>
+                            Fallo al conectar con las celdas de Google Sheets.<br>
+                            <span class="text-[11px] text-slate-500 block mt-1">Verifica que tu hoja de cálculo permita accesos de lectura general.</span>
+                        </td>
+                    </tr>`;
+            }
+        }
+
+        // Función manual para estructurar el CSV de forma exacta
+        function parseCSV(text) {
+            let lines = text.split('\n');
+            if(lines.length < 2) return [];
+            
+            // Extraer y limpiar cabeceras limpiando comillas dobles comunes de Google
+            let headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+            let result = [];
+            
+            for(let i = 1; i < lines.length; i++) {
+                if(!lines[i].trim()) continue;
+                
+                // Expresión regular avanzada para separar por comas respetando el texto interno entre comillas
+                let matches = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
+                let row = {};
+                
+                headers.forEach((header, index) => {
+                    let val = matches[index] ? matches[index].replace(/^"|"$/g, '').trim() : '';
+                    row[header] = val;
+                });
+                result.push(row);
+            }
+            return result;
         }
 
         function populateFilters(data) {
@@ -204,24 +220,27 @@
             const tipos = new Set();
 
             data.forEach(row => {
-                const unidad = row['unidad_ejecutora'];
-                const tipo = row['tipo_de_procedimiento'] || row['tipo_procedimiento'];
-                if(unidad) unidades.add(unidad.trim());
-                if(tipo) tipos.add(tipo.trim());
+                // Buscar coincidencia parcial de columnas
+                let keys = Object.keys(row);
+                let uKey = keys.find(k => k.includes('unidad'));
+                let tKey = keys.find(k => k.includes('procedimiento') && !k.includes('numero'));
+                
+                if(uKey && row[uKey]) unidades.add(row[uKey]);
+                if(tKey && row[tKey]) tipos.add(row[tKey]);
             });
 
             unidadSelect.innerHTML = '<option value="todos">Todas las Unidades</option>';
             Array.from(unidades).sort().forEach(un => {
-                unidadSelect.innerHTML += `<option value="${un}">${un}</option>`;
+                if(un) unidadSelect.innerHTML += `<option value="${un}">${un}</option>`;
             });
 
             tipoSelect.innerHTML = '<option value="todos">Todos los Tipos</option>';
             Array.from(tipos).sort().forEach(tp => {
-                tipoSelect.innerHTML += `<option value="${tp}">${tp}</option>`;
+                if(tp) tipoSelect.innerHTML += `<option value="${tp}">${tp}</option>`;
             });
 
-            if(Array.from(unidades).includes(currentUnidad)) unidadSelect.value = currentUnidad;
-            if(Array.from(tipos).includes(currentTipo)) tipoSelect.value = currentTipo;
+            if(unidadSelect.querySelector(`option[value="${currentUnidad}"]`)) unidadSelect.value = currentUnidad;
+            if(tipoSelect.querySelector(`option[value="${currentTipo}"]`)) tipoSelect.value = currentTipo;
         }
 
         function cleanPrice(priceStr) {
@@ -243,23 +262,18 @@
             let countMenor10k = 0;
             const unidadesUnicas = new Set();
 
-            if (data.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No se encontraron registros.</td></tr>`;
-                updateKPIs(0, 0, 0, 0);
-                document.getElementById('record-count').innerText = "0 registros";
-                return;
-            }
-
             data.forEach(row => {
-                // Mapeos usando las llaves normalizadas seguras
-                const fecha = row['fecha_de_ingreso_a_compras'] || row['fecha_ingreso_a_compras'] || Object.values(row)[0] || '';
-                const requisicion = row['n__de_requisicion'] || row['n_requisicion'] || '';
-                const unidad = row['unidad_ejecutora'] || '';
-                const tipo = row['tipo_de_procedimiento'] || row['tipo_procedimiento'] || '';
-                const descripcion = row['descripcion'] || '';
-                const panamaCompras = row['no__procedimiento_panama_compras_'] || row['no_procedimiento_panama_compras'] || '';
-                const precioRefStr = row['precio_de_referencia'] || '0';
-                const funcionario = row['funcionario'] || '';
+                let keys = Object.keys(row);
+                
+                // Mapear dinámicamente según la posición de la estructura de la captura "Captura de pantalla 2026-06-18 090346.png"
+                const fecha = row[keys.find(k => k.includes('fecha'))] || '';
+                const requisicion = row[keys.find(k => k.includes('requisic') || k.includes('req'))] || '';
+                const unidad = row[keys.find(k => k.includes('unidad'))] || '';
+                const tipo = row[keys.find(k => k.includes('procedimiento') && !k.includes('num'))] || '';
+                const descripcion = row[keys.find(k => k.includes('descrip'))] || '';
+                const panamaCompras = row[keys.find(k => k.includes('panama') || k.includes('compras'))] || '';
+                const precioRefStr = row[keys.find(k => k.includes('precio') || k.includes('referencia'))] || '0';
+                const funcionario = row[keys.find(k => k.includes('funcio'))] || '';
 
                 const precioClean = cleanPrice(precioRefStr);
                 totalMonto += precioClean;
@@ -271,7 +285,7 @@
                 tr.innerHTML = `
                     <td class="py-3 px-4 font-medium text-slate-600 whitespace-nowrap">${fecha}</td>
                     <td class="py-3 px-4 font-semibold text-slate-900">${requisicion}</td>
-                    <td class="py-3 px-4 text-slate-600"><span class="italic text-[11px] font-medium text-indigo-900 block bg-indigo-50/70 px-2 py-0.5 rounded border border-indigo-100/40 w-max max-w-[200px] truncate" title="${unidad}">${unidad}</span></td>
+                    <td class="py-3 px-4 text-slate-600"><span class="italic text-[11px] font-medium text-indigo-900 block bg-indigo-50/70 px-2 py-0.5 rounded border border-indigo-100/40 w-max max-w-[220px] truncate" title="${unidad}">${unidad}</span></td>
                     <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">${tipo}</span></td>
                     <td class="py-3 px-4 max-w-xs truncate text-slate-600" title="${descripcion}">${descripcion}</td>
                     <td class="py-3 px-4 font-mono text-slate-500">${panamaCompras}</td>
@@ -298,8 +312,9 @@
             const selectedTipo = document.getElementById('filter-tipo').value;
 
             const filtered = rawData.filter(row => {
-                const unidad = (row['unidad_ejecutora'] || '').trim();
-                const tipo = (row['tipo_de_procedimiento'] || row['tipo_procedimiento'] || '').trim();
+                let keys = Object.keys(row);
+                const unidad = (row[keys.find(k => k.includes('unidad'))] || '').trim();
+                const tipo = (row[keys.find(k => k.includes('procedimiento') && !k.includes('num'))] || '').trim();
                 const fullRowString = Object.values(row).join(' ').toLowerCase();
 
                 const matchSearch = searchTerm === '' || fullRowString.includes(searchTerm);
