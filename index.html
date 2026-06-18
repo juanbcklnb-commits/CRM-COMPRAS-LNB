@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard CRM Depto. Compras LNB 2026</title>
-    <!-- Tailwind CSS para diseño de Alta Gerencia -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para iconos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
@@ -18,7 +16,6 @@
 </head>
 <body class="text-slate-800">
 
-    <!-- Header / Banner Principal -->
     <header class="bg-navy-soft text-white px-6 py-4 shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
         <div class="flex items-center gap-4">
             <div class="p-2 bg-slate-700 rounded-lg">
@@ -39,10 +36,8 @@
         </div>
     </header>
 
-    <!-- Contenedor Principal -->
     <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
 
-        <!-- Fila de KPIs / Indicadores Clave de Alta Gerencia -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                 <div>
@@ -82,7 +77,6 @@
             </div>
         </section>
 
-        <!-- Filtros Avanzados -->
         <section class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
             <div class="w-full md:w-1/3 relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
@@ -104,7 +98,6 @@
             </div>
         </section>
 
-        <!-- Tabla de Datos Principal -->
         <section class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="p-4 border-b border-slate-100 flex justify-between items-center">
                 <h2 class="font-bold text-slate-700 text-sm tracking-wide flex items-center gap-2">
@@ -141,13 +134,13 @@
     </main>
 
     <script>
-        // Enlace directo de exportación nativo para saltar el bloqueo de GitHub Pages (CORS)
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/1vRCqNVtnwMoZagf6vGc_IuHPiffDu4YKlPuy8C0j6CgEALSLk9JpBxZSDNseIKU2g/gviz/tq?tqx=out:csv&gid=92599788';
+        // Enlace directo en formato Google Visualization API para omitir problemas de formato CSV plano
+        const jsonUrl = 'https://docs.google.com/spreadsheets/d/1vRCqNVtnwMoZagf6vGc_IuHPiffDu4YKlPuy8C0j6CgEALSLk9JpBxZSDNseIKU2g/gviz/tq?gid=92599788';
         let rawData = [];
 
         document.addEventListener("DOMContentLoaded", function() {
             fetchData();
-            setInterval(fetchData, 60000); // Sincroniza de fondo automáticamente cada 60 segundos
+            setInterval(fetchData, 60000); // Sincronización en segundo plano cada 60s
         });
 
         async function fetchData() {
@@ -156,12 +149,18 @@
             statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-500 flex items-center gap-2";
 
             try {
-                const response = await fetch(csvUrl);
+                const response = await fetch(jsonUrl);
                 const text = await response.text();
                 
-                // Parseador de CSV interno ultra veloz para omitir dependencias caídas
-                rawData = parseCSV(text);
+                // Limpiar la respuesta estructurada de Google de forma segura
+                const jsonString = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+                const json = JSON.parse(jsonString);
                 
+                const rows = json.table.rows;
+                rawData = rows.map(r => {
+                    return r.c.map(cell => cell ? (cell.f ? cell.f : cell.v) : '');
+                });
+
                 if(rawData.length > 0) {
                     populateFilters(rawData);
                     renderDashboard(rawData);
@@ -179,35 +178,10 @@
                         <td colspan="8" class="text-center py-8 text-rose-600 bg-rose-50/50">
                             <i class="fa-solid fa-triangle-exclamation text-2xl mb-2 block"></i>
                             Fallo al conectar con las celdas de Google Sheets.<br>
-                            <span class="text-[11px] text-slate-500 block mt-1">Verifica que tu hoja de cálculo permita accesos de lectura general.</span>
+                            <span class="text-[11px] text-slate-500 block mt-1">Asegúrese de que el documento esté compartido de forma abierta para lectura.</span>
                         </td>
                     </tr>`;
             }
-        }
-
-        // Función manual para estructurar el CSV de forma exacta
-        function parseCSV(text) {
-            let lines = text.split('\n');
-            if(lines.length < 2) return [];
-            
-            // Extraer y limpiar cabeceras limpiando comillas dobles comunes de Google
-            let headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
-            let result = [];
-            
-            for(let i = 1; i < lines.length; i++) {
-                if(!lines[i].trim()) continue;
-                
-                // Expresión regular avanzada para separar por comas respetando el texto interno entre comillas
-                let matches = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
-                let row = {};
-                
-                headers.forEach((header, index) => {
-                    let val = matches[index] ? matches[index].replace(/^"|"$/g, '').trim() : '';
-                    row[header] = val;
-                });
-                result.push(row);
-            }
-            return result;
         }
 
         function populateFilters(data) {
@@ -220,23 +194,19 @@
             const tipos = new Set();
 
             data.forEach(row => {
-                // Buscar coincidencia parcial de columnas
-                let keys = Object.keys(row);
-                let uKey = keys.find(k => k.includes('unidad'));
-                let tKey = keys.find(k => k.includes('procedimiento') && !k.includes('numero'));
-                
-                if(uKey && row[uKey]) unidades.add(row[uKey]);
-                if(tKey && row[tKey]) tipos.add(row[tKey]);
+                // Según las columnas de la captura: Columna 2 (Índice 2) es Unidad, Columna 3 (Índice 3) es Tipo
+                if(row[2]) unidades.add(row[2].toString().trim());
+                if(row[3]) tipos.add(row[3].toString().trim());
             });
 
             unidadSelect.innerHTML = '<option value="todos">Todas las Unidades</option>';
             Array.from(unidades).sort().forEach(un => {
-                if(un) unidadSelect.innerHTML += `<option value="${un}">${un}</option>`;
+                unidadSelect.innerHTML += `<option value="${un}">${un}</option>`;
             });
 
             tipoSelect.innerHTML = '<option value="todos">Todos los Tipos</option>';
             Array.from(tipos).sort().forEach(tp => {
-                if(tp) tipoSelect.innerHTML += `<option value="${tp}">${tp}</option>`;
+                tipoSelect.innerHTML += `<option value="${tp}">${tp}</option>`;
             });
 
             if(unidadSelect.querySelector(`option[value="${currentUnidad}"]`)) unidadSelect.value = currentUnidad;
@@ -245,7 +215,7 @@
 
         function cleanPrice(priceStr) {
             if (!priceStr) return 0;
-            let clean = priceStr.replace(/B\/\./g, '').replace(/[^0-9.-]/g, '').trim();
+            let clean = priceStr.toString().replace(/B\/\./g, '').replace(/[^0-9.-]/g, '').trim();
             let val = parseFloat(clean);
             return isNaN(val) ? 0 : val;
         }
@@ -263,22 +233,20 @@
             const unidadesUnicas = new Set();
 
             data.forEach(row => {
-                let keys = Object.keys(row);
-                
-                // Mapear dinámicamente según la posición de la estructura de la captura "Captura de pantalla 2026-06-18 090346.png"
-                const fecha = row[keys.find(k => k.includes('fecha'))] || '';
-                const requisicion = row[keys.find(k => k.includes('requisic') || k.includes('req'))] || '';
-                const unidad = row[keys.find(k => k.includes('unidad'))] || '';
-                const tipo = row[keys.find(k => k.includes('procedimiento') && !k.includes('num'))] || '';
-                const descripcion = row[keys.find(k => k.includes('descrip'))] || '';
-                const panamaCompras = row[keys.find(k => k.includes('panama') || k.includes('compras'))] || '';
-                const precioRefStr = row[keys.find(k => k.includes('precio') || k.includes('referencia'))] || '0';
-                const funcionario = row[keys.find(k => k.includes('funcio'))] || '';
+                // Asignación estricta por índices según el diseño de tu captura
+                const fecha = row[0] || '';
+                const requisicion = row[1] || '';
+                const unidad = row[2] || '';
+                const tipo = row[3] || '';
+                const descripcion = row[4] || '';
+                const panamaCompras = row[5] || '';
+                const precioRefStr = row[6] || '0';
+                const funcionario = row[7] || '';
 
                 const precioClean = cleanPrice(precioRefStr);
                 totalMonto += precioClean;
-                if(unidad) unidadesUnicas.add(unidad.trim());
-                if(tipo.toLowerCase().includes('menor 10k')) countMenor10k++;
+                if(unidad) unidadesUnicas.add(unidad.toString().trim());
+                if(tipo.toString().toLowerCase().includes('menor 10k') || tipo.toString().toLowerCase().includes('menor de 10k')) countMenor10k++;
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors";
@@ -312,10 +280,9 @@
             const selectedTipo = document.getElementById('filter-tipo').value;
 
             const filtered = rawData.filter(row => {
-                let keys = Object.keys(row);
-                const unidad = (row[keys.find(k => k.includes('unidad'))] || '').trim();
-                const tipo = (row[keys.find(k => k.includes('procedimiento') && !k.includes('num'))] || '').trim();
-                const fullRowString = Object.values(row).join(' ').toLowerCase();
+                const unidad = (row[2] || '').toString().trim();
+                const tipo = (row[3] || '').toString().trim();
+                const fullRowString = row.join(' ').toLowerCase();
 
                 const matchSearch = searchTerm === '' || fullRowString.includes(searchTerm);
                 const matchUnidad = selectedUnidad === 'todos' || unidad === selectedUnidad;
