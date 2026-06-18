@@ -1,864 +1,316 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Ejecutivo — Depto. Compras LNB 2026</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-  :root {
-    --bg: #0b0f1a;
-    --surface: #121826;
-    --surface2: #1a2235;
-    --border: #1e2d45;
-    --accent: #00e5c0;
-    --accent2: #ff6b35;
-    --accent3: #f0c040;
-    --text: #e8eef8;
-    --text-muted: #7a8fad;
-    --green: #2ecc8a;
-    --red: #ff4e6a;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
-
-  /* Noise texture overlay */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.35;
-  }
-
-  .wrapper {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 40px 28px 60px;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Header */
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 40px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .header-left h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(32px, 5vw, 52px);
-    letter-spacing: 2px;
-    color: var(--text);
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .header-left h1 span {
-    color: var(--accent);
-  }
-
-  .header-left p {
-    color: var(--text-muted);
-    font-size: 13px;
-    margin-top: 6px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .header-right {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0,229,192,0.1);
-    border: 1px solid rgba(0,229,192,0.3);
-    color: var(--accent);
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-family: 'DM Mono', monospace;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-  }
-
-  .badge::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.7); }
-  }
-
-  /* KPI Grid */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px 22px;
-    position: relative;
-    overflow: hidden;
-    animation: fadeUp 0.5s ease both;
-  }
-
-  .kpi-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-  }
-
-  .kpi-card.accent::after { background: var(--accent); }
-  .kpi-card.orange::after { background: var(--accent2); }
-  .kpi-card.yellow::after { background: var(--accent3); }
-  .kpi-card.green::after { background: var(--green); }
-  .kpi-card.red::after { background: var(--red); }
-
-  .kpi-card:nth-child(1) { animation-delay: 0.05s; }
-  .kpi-card:nth-child(2) { animation-delay: 0.1s; }
-  .kpi-card:nth-child(3) { animation-delay: 0.15s; }
-  .kpi-card:nth-child(4) { animation-delay: 0.2s; }
-  .kpi-card:nth-child(5) { animation-delay: 0.25s; }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .kpi-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    font-weight: 500;
-    margin-bottom: 10px;
-  }
-
-  .kpi-value {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 36px;
-    letter-spacing: 1px;
-    line-height: 1;
-    color: var(--text);
-  }
-
-  .kpi-sub {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 6px;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .kpi-sub.positive { color: var(--green); }
-  .kpi-sub.negative { color: var(--red); }
-  .kpi-sub.neutral { color: var(--accent3); }
-
-  /* Section titles */
-  .section-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 2px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* Charts row */
-  .charts-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  @media (max-width: 760px) {
-    .charts-row { grid-template-columns: 1fr; }
-  }
-
-  .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-    animation: fadeUp 0.5s ease 0.3s both;
-  }
-
-  .chart-card h3 {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    margin-bottom: 18px;
-    font-weight: 500;
-  }
-
-  .chart-wrapper {
-    position: relative;
-    height: 230px;
-  }
-
-  /* Tables section */
-  .tables-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  @media (max-width: 760px) {
-    .tables-row { grid-template-columns: 1fr; }
-  }
-
-  .table-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-    animation: fadeUp 0.5s ease 0.4s both;
-  }
-
-  .table-card h3 {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    margin-bottom: 16px;
-    font-weight: 500;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  th {
-    text-align: left;
-    color: var(--text-muted);
-    font-size: 11px;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    padding: 0 0 10px;
-    font-weight: 500;
-    border-bottom: 1px solid var(--border);
-  }
-
-  td {
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(30,45,69,0.5);
-    color: var(--text);
-    font-size: 13px;
-  }
-
-  tr:last-child td { border-bottom: none; }
-
-  .rank-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-  }
-
-  .rank-1 { background: rgba(0,229,192,0.15); color: var(--accent); }
-  .rank-2 { background: rgba(240,192,64,0.15); color: var(--accent3); }
-  .rank-3 { background: rgba(255,107,53,0.15); color: var(--accent2); }
-
-  .amount { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); }
-  .amount.low { color: var(--text-muted); }
-
-  .empresa-name {
-    font-size: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 160px;
-  }
-
-  /* Status indicator */
-  .status-dot {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    margin-right: 6px;
-  }
-
-  /* Recommendations */
-  .rec-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  .rec-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-    animation: fadeUp 0.5s ease 0.5s both;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .rec-number {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 64px;
-    color: rgba(255,255,255,0.03);
-    position: absolute;
-    top: -10px;
-    right: 14px;
-    line-height: 1;
-    user-select: none;
-  }
-
-  .rec-icon {
-    font-size: 20px;
-    margin-bottom: 10px;
-  }
-
-  .rec-title {
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-
-  .rec-body {
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.7;
-  }
-
-  /* Status progress bar */
-  .progress-bar-container {
-    margin-top: 14px;
-  }
-
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin-bottom: 5px;
-  }
-
-  .progress-bar {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 8px;
-  }
-
-  .progress-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
-  }
-
-  .fill-green { background: var(--green); }
-  .fill-yellow { background: var(--accent3); }
-  .fill-red { background: var(--red); }
-  .fill-blue { background: var(--accent); }
-
-  /* Full width table card */
-  .full-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px;
-    margin-bottom: 32px;
-    animation: fadeUp 0.5s ease 0.45s both;
-    overflow-x: auto;
-  }
-
-  .full-card h3 {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    margin-bottom: 16px;
-    font-weight: 500;
-  }
-
-  .tag {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-
-  .tag-green { background: rgba(46,204,138,0.15); color: var(--green); }
-  .tag-yellow { background: rgba(240,192,64,0.15); color: var(--accent3); }
-  .tag-red { background: rgba(255,107,53,0.15); color: var(--accent2); }
-  .tag-blue { background: rgba(0,229,192,0.15); color: var(--accent); }
-
-  /* Footer */
-  footer {
-    border-top: 1px solid var(--border);
-    padding-top: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  footer p {
-    font-size: 11px;
-    color: var(--text-muted);
-    font-family: 'DM Mono', monospace;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard CRM Depto. Compras LNB 2026</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PapaParse para lectura en tiempo real sin problemas de CORS en GitHub Pages -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+        }
+        .bg-navy-soft { background-color: #1e293b; }
+    </style>
 </head>
-<body>
-<div class="wrapper">
+<body class="text-slate-800">
 
-  <!-- Header -->
-  <header>
-    <div class="header-left">
-      <h1>Dashboard <span>Compras</span> LNB</h1>
-      <p>CRM / Departamento de Compras · Vigencia Año 2026</p>
-    </div>
-    <div class="header-right">
-      <span class="badge">ACTIVO · JUNIO 2026</span>
-      <p style="font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-top:4px;">Generado: 08/06/2026</p>
-    </div>
-  </header>
+    <!-- Header / Banner Principal -->
+    <header class="bg-navy-soft text-white px-6 py-4 shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4">
+            <div class="p-2 bg-slate-700 rounded-lg">
+                <i class="fa-solid fa-chart-line text-2xl text-cyan-400"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide">CRM DEPTO. COMPRAS LNB 2026</h1>
+                <p class="text-xs text-slate-400">Visualización de Procedimientos en Tiempo Real</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="connection-status" class="px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-500 flex items-center gap-2">
+                <span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span> Conectando...
+            </span>
+            <button onclick="fetchData()" class="bg-slate-700 hover:bg-slate-600 transition px-3 py-1.5 text-xs font-medium rounded shadow flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate"></i> Actualizar
+            </button>
+        </div>
+    </header>
 
-  <!-- KPI Scorecard -->
-  <div class="section-title">KPI Scorecard</div>
-  <div class="kpi-grid">
-    <div class="kpi-card accent">
-      <div class="kpi-label">Monto Total Referencia</div>
-      <div class="kpi-value">$317,893</div>
-      <div class="kpi-sub neutral">28 expedientes registrados</div>
-    </div>
-    <div class="kpi-card green">
-      <div class="kpi-label">Monto Total Adjudicado</div>
-      <div class="kpi-value">$291,753</div>
-      <div class="kpi-sub positive">↓ 8.2% vs precio referencia</div>
-    </div>
-    <div class="kpi-card yellow">
-      <div class="kpi-label">Ahorro Logrado</div>
-      <div class="kpi-value">$26,140</div>
-      <div class="kpi-sub positive">13.7% sobre completados</div>
-    </div>
-    <div class="kpi-card orange">
-      <div class="kpi-label">Tasa de Completados</div>
-      <div class="kpi-value">82.1%</div>
-      <div class="kpi-sub neutral">23 de 28 expedientes</div>
-    </div>
-    <div class="kpi-card red">
-      <div class="kpi-label">Expedientes Pendientes</div>
-      <div class="kpi-value">5</div>
-      <div class="kpi-sub negative">$269,138 en riesgo/espera</div>
-    </div>
-  </div>
+    <!-- Contenedor Principal -->
+    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
 
-  <!-- Charts -->
-  <div class="section-title">Análisis & Tendencias</div>
-  <div class="charts-row">
-    <div class="chart-card">
-      <h3>Distribución por Tipo de Procedimiento (Monto Adjudicado)</h3>
-      <div class="chart-wrapper">
-        <canvas id="chartTipo"></canvas>
-      </div>
-    </div>
-    <div class="chart-card">
-      <h3>Estado de Expedientes</h3>
-      <div class="chart-wrapper">
-        <canvas id="chartEstado"></canvas>
-      </div>
-    </div>
-  </div>
+        <!-- Fila de KPIs / Indicadores Clave de Alta Gerencia -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Procedimientos</p>
+                    <h3 id="kpi-total" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                </div>
+                <div class="h-12 w-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Monto Total Referencia</p>
+                    <h3 id="kpi-monto" class="text-2xl font-bold text-slate-800 mt-1">B/. 0.00</h3>
+                </div>
+                <div class="h-12 w-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Unidades Ejecutoras</p>
+                    <h3 id="kpi-unidades" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                </div>
+                <div class="h-12 w-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Compras Menor 10k</p>
+                    <h3 id="kpi-menor10k" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                </div>
+                <div class="h-12 w-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-tags"></i>
+                </div>
+            </div>
+        </section>
 
-  <!-- Unidad Ejecutora chart -->
-  <div class="full-card">
-    <h3>Gasto por Unidad Ejecutora — Referencia vs Adjudicado (B/.)</h3>
-    <div style="position:relative;height:260px;">
-      <canvas id="chartUnidad"></canvas>
-    </div>
-  </div>
+        <!-- Filtros Avanzados -->
+        <section class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="w-full md:w-1/3 relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="search-input" oninput="filterData()" placeholder="Buscar descripción, unidad, n° requisición..." class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition outline-none">
+            </div>
+            <div class="w-full md:w-auto flex flex-wrap gap-3 items-center justify-end">
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1 font-medium">Unidad Ejecutora</label>
+                    <select id="filter-unidad" onchange="filterData()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 outline-none focus:ring-2 focus:ring-blue-500/20 w-48">
+                        <option value="todos">Todas las Unidades</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1 font-medium">Tipo Procedimiento</label>
+                    <select id="filter-tipo" onchange="filterData()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg block p-2 outline-none focus:ring-2 focus:ring-blue-500/20 w-48">
+                        <option value="todos">Todos los Tipos</option>
+                    </select>
+                </div>
+            </div>
+        </section>
 
-  <!-- Savings progress -->
-  <div class="full-card">
-    <h3>Eficiencia de Negociación por Tipo de Procedimiento</h3>
-    <div class="progress-bar-container">
-      <div class="progress-label">
-        <span>Compra Menor 10k</span>
-        <span style="color:var(--green);font-family:'DM Mono',monospace;font-size:12px;">37.0% ahorro — $31,792 adj. / $50,481 ref.</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill fill-green" style="width:63%"></div></div>
-      <div class="progress-label">
-        <span>Convenio Marco</span>
-        <span style="color:var(--green);font-family:'DM Mono',monospace;font-size:12px;">46.4% ahorro — $8,608 adj. / $16,058 ref.</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill fill-green" style="width:54%"></div></div>
-      <div class="progress-label">
-        <span>Procedimiento Especial</span>
-        <span style="color:var(--accent3);font-family:'DM Mono',monospace;font-size:12px;">0% ahorro — $32,350 adj. / $32,350 ref.</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill fill-yellow" style="width:100%"></div></div>
-      <div class="progress-label">
-        <span>Procedimiento Excepcional</span>
-        <span style="color:var(--text-muted);font-family:'DM Mono',monospace;font-size:12px;">0% ahorro — $219,003 adj. / $219,003 ref. (arrendamientos)</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill fill-blue" style="width:100%"></div></div>
-    </div>
-  </div>
+        <!-- Tabla de Datos Principal -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="font-bold text-slate-700 text-sm tracking-wide flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-blue-500"></i> Registro General de Compras
+                </h2>
+                <span id="record-count" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">Cargando...</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-xs font-semibold border-b border-slate-100 uppercase tracking-wider">
+                            <th class="py-3.5 px-4">Fecha Ingreso</th>
+                            <th class="py-3.5 px-4">N° Requisición</th>
+                            <th class="py-3.5 px-4">Unidad Ejecutora</th>
+                            <th class="py-3.5 px-4">Tipo Procedimiento</th>
+                            <th class="py-3.5 px-4">Descripción</th>
+                            <th class="py-3.5 px-4">No. Procedimiento Panamá Compras</th>
+                            <th class="py-3.5 px-4 text-right">Precio de Referencia</th>
+                            <th class="py-3.5 px-4 text-center">Funcionario</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="text-xs divide-y divide-slate-100 text-slate-700">
+                        <tr>
+                            <td colspan="8" class="text-center py-8 text-slate-400">
+                                <i class="fa-solid fa-spinner animate-spin text-xl mb-2 block text-blue-500"></i>
+                                Conectando en vivo con Google Sheets...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
 
-  <!-- Top & Bottom tables -->
-  <div class="tables-row">
-    <div class="table-card">
-      <h3>🏆 Top 3 — Mayor Monto Adjudicado</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Requisición</th>
-            <th>Empresa</th>
-            <th>Monto</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><span class="rank-pill rank-1">1</span></td>
-            <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-347</td>
-            <td><div class="empresa-name">TIRSO DE MOLINO, S.A.</div><div style="font-size:10px;color:var(--text-muted)">Arrendamiento · Dir. Administrativa</div></td>
-            <td><span class="amount">$170,196</span></td>
-          </tr>
-          <tr>
-            <td><span class="rank-pill rank-2">2</span></td>
-            <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-375</td>
-            <td><div class="empresa-name">DARYS M. ARDITO-BARLETTA</div><div style="font-size:10px;color:var(--text-muted)">Arrendamiento · Dir. Administrativa</div></td>
-            <td><span class="amount">$48,807</span></td>
-          </tr>
-          <tr>
-            <td><span class="rank-pill rank-3">3</span></td>
-            <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-464</td>
-            <td><div class="empresa-name">UNIV. TECNOLÓGICA DE PANAMÁ</div><div style="font-size:10px;color:var(--text-muted)">Estudio infraestructura · Edificaciones</div></td>
-            <td><span class="amount">$32,350</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <script>
+        // URL de tu Google Sheet en formato CSV público
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCqNVtnwMoZagf6vGc_IuHPiffDu4YKlPuy8C0j6CgEALSLk9JpBxZSDNseIKU2g/pub?gid=92599788&single=true&output=csv';
+        let rawData = [];
 
-    <div class="table-card">
-      <h3>📉 Bottom 3 — Menor Monto (Completados)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Requisición</th>
-            <th>Empresa</th>
-            <th>Monto</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="color:var(--text-muted);font-family:'DM Mono',monospace;font-size:12px;">01</td>
-            <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-507(2)</td>
-            <td><div class="empresa-name">PRODUCTOS SUPERIORES, S.A.</div><div style="font-size:10px;color:var(--text-muted)">Alineamiento llantas · Transporte</div></td>
-            <td><span class="amount low">$275</span></td>
-          </tr>
-          <tr>
-            <td style="color:var(--text-muted);font-family:'DM Mono',monospace;font-size:12px;">02</td>
-            <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-480</td>
-            <td><div class="empresa-name">ÓPTICA DELUXE, S.A.</div><div style="font-size:10px;color:var(--text-muted)">Lentes graduados · Des. Social</div></td>
-            <td><span class="amount low">$333</span></td>
-          </tr>
-          <tr>
-            <td style="color:var(--text-muted);font-family:'DM Mono',monospace;font-size:12px;">03</td>
-            <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-547</td>
-            <td><div class="empresa-name">VISUAL TOTAL, S.A.</div><div style="font-size:10px;color:var(--text-muted)">Puerta vidrio · Presupuesto</div></td>
-            <td><span class="amount low">$430</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchData();
+            setInterval(fetchData, 60000); // Auto-actualizar cada minuto
+        });
 
-  <!-- Pending expedients -->
-  <div class="full-card">
-    <h3>⚠️ Expedientes Pendientes / En Proceso</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Requisición</th>
-          <th>Descripción</th>
-          <th>Tipo</th>
-          <th>Precio Ref.</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-347</td>
-          <td style="max-width:260px;font-size:12px;">Arrendamiento Agencia Los Andes</td>
-          <td><span class="tag tag-blue">Excepcional</span></td>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">$170,196</td>
-          <td><span class="tag tag-yellow">Aprobación DGCP</span></td>
-        </tr>
-        <tr>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-375</td>
-          <td style="max-width:260px;font-size:12px;">Arrendamiento Dir. Los Santos</td>
-          <td><span class="tag tag-blue">Excepcional</span></td>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">$48,807</td>
-          <td><span class="tag tag-yellow">Aprobación DGCP</span></td>
-        </tr>
-        <tr>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-499</td>
-          <td style="max-width:260px;font-size:12px;">Llantas vehículos de la entidad</td>
-          <td><span class="tag tag-green">Convenio Marco</span></td>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">$7,451</td>
-          <td><span class="tag tag-red">En Revisión</span></td>
-        </tr>
-        <tr>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">2026-572</td>
-          <td style="max-width:260px;font-size:12px;">Revisado vehicular flota LNB</td>
-          <td><span class="tag tag-green">Compra Menor</span></td>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">$1,585</td>
-          <td><span class="tag tag-red">En Revisión</span></td>
-        </tr>
-        <tr>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">Sin Nº</td>
-          <td style="max-width:260px;font-size:12px;">Remodelación Agencia Aguadulce</td>
-          <td><span class="tag tag-blue">Licitación Pública</span></td>
-          <td style="font-family:'DM Mono',monospace;font-size:12px;">$250,000</td>
-          <td><span class="tag tag-yellow">Espera de Término</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+        function fetchData() {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span> Sincronizando...';
+            statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-500 flex items-center gap-2";
 
-  <!-- Recommendations -->
-  <div class="section-title">Recomendaciones Ejecutivas</div>
-  <div class="rec-grid">
-    <div class="rec-card">
-      <div class="rec-number">01</div>
-      <div class="rec-icon">🏗️</div>
-      <div class="rec-title">Priorizar la Licitación de Aguadulce</div>
-      <div class="rec-body">El proceso de remodelación de la Agencia de Aguadulce por <strong>$250,000</strong> representa el mayor compromiso presupuestario individual pendiente. Se recomienda asignar un oficial de seguimiento dedicado para garantizar que la homologación (10/6) y apertura (15/6) procedan sin contratiempos y evitar retrasos que puedan afectar la operativa de la agencia.</div>
-    </div>
-    <div class="rec-card">
-      <div class="rec-number">02</div>
-      <div class="rec-icon">📋</div>
-      <div class="rec-title">Agilizar Expedientes en DGCP</div>
-      <div class="rec-body">Dos arrendamientos críticos (Los Andes y Los Santos) suman <strong>$219,003</strong> y llevan semanas en proceso de subsanación ante la DGCP. Se sugiere establecer un canal directo con la Dirección General de Contrataciones Públicas y designar un responsable por expediente para reducir el ciclo de aprobación y evitar impactos en la continuidad operativa.</div>
-    </div>
-    <div class="rec-card">
-      <div class="rec-number">03</div>
-      <div class="rec-icon">💰</div>
-      <div class="rec-title">Replicar Éxito en Negociación de Bienes</div>
-      <div class="rec-body">Las compras menores y convenios marco han logrado ahorros de hasta el <strong>46%</strong> sobre precio de referencia (Sección de Almacén: $9,800 ref. vs $4,100 adj.). Se recomienda documentar las estrategias de negociación usadas con proveedores como FOCUSMAXX y PRODUCTOS SUPERIORES para replicarlas en otras unidades con mayores presupuestos.</div>
-    </div>
-    <div class="rec-card">
-      <div class="rec-number">04</div>
-      <div class="rec-icon">📊</div>
-      <div class="rec-title">Consolidar Proveedores Recurrentes</div>
-      <div class="rec-body">Varios proveedores aparecen en múltiples requisiciones (DISTRIBUIDORA NOVO, PRODUCTOS SUPERIORES, CLÍNICA DE OJOS AROSEMENA, ISTMO LLANTAS). Consolidar estos contratos bajo acuerdos marco o contratos anuales podría generar ahorros adicionales del 10–15% y reducir carga administrativa en el proceso de cotización y adjudicación.</div>
-    </div>
-  </div>
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    rawData = results.data;
+                    
+                    // Normalizar las propiedades del objeto para evitar problemas con tildes o caracteres especiales
+                    rawData = rawData.map(row => {
+                        let normalizedRow = {};
+                        Object.keys(row).forEach(key => {
+                            let normalizedKey = key.toLowerCase().trim()
+                                .replace(/[áàäâ]/g, 'a')
+                                .replace(/[éèëê]/g, 'e')
+                                .replace(/[íìïî]/g, 'i')
+                                .replace(/[óòöô]/g, 'o')
+                                .replace(/[úùüû]/g, 'u')
+                                .replace(/[^a-z0-9]/g, '_'); // reemplaza espacios/puntos por guiones bajos
+                            normalizedRow[normalizedKey] = row[key];
+                        });
+                        return normalizedRow;
+                    });
 
-  <footer>
-    <p>Lotería Nacional de Beneficencia · Depto. de Compras y Proveeduría · 2026</p>
-    <p>Fuente: CRM Depto. Compras LNB 2026 · 28 expedientes analizados</p>
-  </footer>
+                    populateFilters(rawData);
+                    renderDashboard(rawData);
 
-</div>
-
-<script>
-// Shared chart defaults
-Chart.defaults.color = '#7a8fad';
-Chart.defaults.borderColor = '#1e2d45';
-Chart.defaults.font.family = "'DM Sans', sans-serif";
-
-// Chart 1: Tipo de Procedimiento (Donut)
-new Chart(document.getElementById('chartTipo'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Proc. Excepcional', 'Proc. Especial', 'Compra Menor 10k', 'Convenio Marco'],
-    datasets: [{
-      data: [219003, 32350, 31792, 8608],
-      backgroundColor: ['#00e5c0', '#f0c040', '#ff6b35', '#2ecc8a'],
-      borderColor: '#121826',
-      borderWidth: 3,
-      hoverOffset: 8
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '65%',
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          padding: 14,
-          font: { size: 11 },
-          boxWidth: 12,
-          usePointStyle: true,
-          pointStyleWidth: 8
+                    statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span> Sincronizado LNB';
+                    statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400 flex items-center gap-2";
+                },
+                error: function(err) {
+                    console.error(err);
+                    statusEl.innerHTML = '<span class="h-2 w-2 rounded-full bg-rose-500"></span> Error de Enlace';
+                    statusEl.className = "px-3 py-1 text-xs font-semibold rounded-full bg-rose-500/20 text-rose-500 flex items-center gap-2";
+                }
+            });
         }
-      },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` $${ctx.parsed.toLocaleString('es-PA')}`
-        }
-      }
-    }
-  }
-});
 
-// Chart 2: Estado expedientes (Bar)
-new Chart(document.getElementById('chartEstado'), {
-  type: 'bar',
-  data: {
-    labels: ['Completado', 'Aprobación DGCP', 'En Revisión', 'Espera Término'],
-    datasets: [{
-      data: [23, 2, 2, 1],
-      backgroundColor: ['#2ecc8a', '#f0c040', '#ff6b35', '#00e5c0'],
-      borderRadius: 6,
-      borderSkipped: false
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.parsed.y} expediente${ctx.parsed.y > 1 ? 's' : ''}`
-        }
-      }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: {
-        beginAtZero: true,
-        grid: { color: '#1e2d45' },
-        ticks: { stepSize: 5, font: { size: 11 } }
-      }
-    }
-  }
-});
+        function populateFilters(data) {
+            const unidadSelect = document.getElementById('filter-unidad');
+            const tipoSelect = document.getElementById('filter-tipo');
+            const currentUnidad = unidadSelect.value;
+            const currentTipo = tipoSelect.value;
 
-// Chart 3: Unidad Ejecutora (Horizontal Bar)
-new Chart(document.getElementById('chartUnidad'), {
-  type: 'bar',
-  data: {
-    labels: [
-      'Dir. Administrativa',
-      'Dir. Adminstrativa*',
-      'Secc. Edificaciones',
-      'Dir. Des. Social',
-      'Secc. Transporte',
-      'Secc. Almacén',
-      'Dto. Servicios Grls.',
-      'Of. Relaciones Públ.'
-    ],
-    datasets: [
-      {
-        label: 'Precio Referencia',
-        data: [48807, 170196, 32350, 18567, 16058, 12400, 6114, 4375],
-        backgroundColor: 'rgba(0,229,192,0.25)',
-        borderColor: '#00e5c0',
-        borderWidth: 1,
-        borderRadius: 4
-      },
-      {
-        label: 'Precio Adjudicado',
-        data: [48807, 170196, 32350, 15668, 8608, 5224, 5870, 3500],
-        backgroundColor: 'rgba(46,204,138,0.6)',
-        borderColor: '#2ecc8a',
-        borderWidth: 1,
-        borderRadius: 4
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y',
-    plugins: {
-      legend: {
-        position: 'top',
-        labels: { font: { size: 11 }, boxWidth: 12, usePointStyle: true }
-      },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.x.toLocaleString('es-PA')}`
+            const unidades = new Set();
+            const tipos = new Set();
+
+            data.forEach(row => {
+                const unidad = row['unidad_ejecutora'];
+                const tipo = row['tipo_de_procedimiento'] || row['tipo_procedimiento'];
+                if(unidad) unidades.add(unidad.trim());
+                if(tipo) tipos.add(tipo.trim());
+            });
+
+            unidadSelect.innerHTML = '<option value="todos">Todas las Unidades</option>';
+            Array.from(unidades).sort().forEach(un => {
+                unidadSelect.innerHTML += `<option value="${un}">${un}</option>`;
+            });
+
+            tipoSelect.innerHTML = '<option value="todos">Todos los Tipos</option>';
+            Array.from(tipos).sort().forEach(tp => {
+                tipoSelect.innerHTML += `<option value="${tp}">${tp}</option>`;
+            });
+
+            if(Array.from(unidades).includes(currentUnidad)) unidadSelect.value = currentUnidad;
+            if(Array.from(tipos).includes(currentTipo)) tipoSelect.value = currentTipo;
         }
-      }
-    },
-    scales: {
-      x: {
-        grid: { color: '#1e2d45' },
-        ticks: {
-          font: { size: 10 },
-          callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
+
+        function cleanPrice(priceStr) {
+            if (!priceStr) return 0;
+            let clean = priceStr.replace(/B\/\./g, '').replace(/[^0-9.-]/g, '').trim();
+            let val = parseFloat(clean);
+            return isNaN(val) ? 0 : val;
         }
-      },
-      y: { grid: { display: false }, ticks: { font: { size: 11 } } }
-    }
-  }
-});
-</script>
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value).replace('$', 'B/. ');
+        }
+
+        function renderDashboard(data) {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+
+            let totalMonto = 0;
+            let countMenor10k = 0;
+            const unidadesUnicas = new Set();
+
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400">No se encontraron registros.</td></tr>`;
+                updateKPIs(0, 0, 0, 0);
+                document.getElementById('record-count').innerText = "0 registros";
+                return;
+            }
+
+            data.forEach(row => {
+                // Mapeos usando las llaves normalizadas seguras
+                const fecha = row['fecha_de_ingreso_a_compras'] || row['fecha_ingreso_a_compras'] || Object.values(row)[0] || '';
+                const requisicion = row['n__de_requisicion'] || row['n_requisicion'] || '';
+                const unidad = row['unidad_ejecutora'] || '';
+                const tipo = row['tipo_de_procedimiento'] || row['tipo_procedimiento'] || '';
+                const descripcion = row['descripcion'] || '';
+                const panamaCompras = row['no__procedimiento_panama_compras_'] || row['no_procedimiento_panama_compras'] || '';
+                const precioRefStr = row['precio_de_referencia'] || '0';
+                const funcionario = row['funcionario'] || '';
+
+                const precioClean = cleanPrice(precioRefStr);
+                totalMonto += precioClean;
+                if(unidad) unidadesUnicas.add(unidad.trim());
+                if(tipo.toLowerCase().includes('menor 10k')) countMenor10k++;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-medium text-slate-600 whitespace-nowrap">${fecha}</td>
+                    <td class="py-3 px-4 font-semibold text-slate-900">${requisicion}</td>
+                    <td class="py-3 px-4 text-slate-600"><span class="italic text-[11px] font-medium text-indigo-900 block bg-indigo-50/70 px-2 py-0.5 rounded border border-indigo-100/40 w-max max-w-[200px] truncate" title="${unidad}">${unidad}</span></td>
+                    <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">${tipo}</span></td>
+                    <td class="py-3 px-4 max-w-xs truncate text-slate-600" title="${descripcion}">${descripcion}</td>
+                    <td class="py-3 px-4 font-mono text-slate-500">${panamaCompras}</td>
+                    <td class="py-3 px-4 text-right font-bold text-slate-900">${formatCurrency(precioClean)}</td>
+                    <td class="py-3 px-4 text-center text-slate-500 whitespace-nowrap"><i class="fa-regular fa-user text-xs mr-1 text-slate-400"></i> ${funcionario}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            updateKPIs(data.length, totalMonto, unidadesUnicas.size, countMenor10k);
+            document.getElementById('record-count').innerText = `${data.length} registros`;
+        }
+
+        function updateKPIs(total, monto, unidades, menor10k) {
+            document.getElementById('kpi-total').innerText = total;
+            document.getElementById('kpi-monto').innerText = formatCurrency(monto);
+            document.getElementById('kpi-unidades').innerText = unidades;
+            document.getElementById('kpi-menor10k').innerText = menor10k;
+        }
+
+        function filterData() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+            const selectedUnidad = document.getElementById('filter-unidad').value;
+            const selectedTipo = document.getElementById('filter-tipo').value;
+
+            const filtered = rawData.filter(row => {
+                const unidad = (row['unidad_ejecutora'] || '').trim();
+                const tipo = (row['tipo_de_procedimiento'] || row['tipo_procedimiento'] || '').trim();
+                const fullRowString = Object.values(row).join(' ').toLowerCase();
+
+                const matchSearch = searchTerm === '' || fullRowString.includes(searchTerm);
+                const matchUnidad = selectedUnidad === 'todos' || unidad === selectedUnidad;
+                const matchTipo = selectedTipo === 'todos' || tipo === selectedTipo;
+
+                return matchSearch && matchUnidad && matchTipo;
+            });
+
+            renderDashboard(filtered);
+        }
+    </script>
 </body>
 </html>
